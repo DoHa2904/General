@@ -1,0 +1,171 @@
+
+
+Public Sub RenderQRCode(workSheetName As String, cellLocation As String, textValue As String)
+   Dim s_param As String
+   Dim s_encoded As String
+   Dim xSheet As Worksheet
+   Dim QRShapeName As String
+   Dim QRLabelName As String
+
+   s_param = "mode=Q"
+   s_encoded = qr_gen(textValue, s_param)
+   Call DrawQRCode(s_encoded, workSheetName, cellLocation)
+
+   Set xSheet = Worksheets(workSheetName)
+   QRShapeName = "BC" & "$" & Left(cellLocation, 1) _
+       & "$" & Right(cellLocation, Len(cellLocation) - 1) & "#GR"
+
+   QRLabelName = QRShapeName & "_Label"
+
+   With xSheet.Shapes(QRShapeName)
+       .Width = 30
+       .Height = 30
+   End With
+
+   On Error Resume Next
+   If Not (xSheet.Shapes(QRLabelName) Is Nothing) Then
+       xSheet.Shapes(QRLabelName).Delete
+   End If
+
+   xSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, _
+       xSheet.Shapes(QRShapeName).Left + 35, _
+       xSheet.Shapes(QRShapeName).Top, _
+       Len(textValue) * 6, 30) _
+       .Name = QRLabelName
+
+
+   With xSheet.Shapes(QRLabelName)
+       .Line.Visible = msoFalse
+       .TextFrame2.TextRange.Font.Name = "Arial"
+       .TextFrame2.TextRange.Font.Size = 9
+       .TextFrame.Characters.Text = textValue
+       .TextFrame2.VerticalAnchor = msoAnchorMiddle
+   End With
+End Sub
+
+Sub DrawQRCode(xBC As String, workSheetName As String, rangeName As String, Optional xNam As String)
+ Dim xShape As Shape, xBkgr As Shape
+ Dim xSheet As Worksheet
+ Dim xRange As Range, xCell As Range
+ Dim xAddr As String
+ Dim xPosOldX As Double, xPosOldY As Double
+ Dim xSizeOldW As Double, xSizeOldH As Double
+ Dim x, y, m, dm, a As Double
+ Dim b%, n%, w%, p$, s$, h%, g%
+
+Set xSheet = Worksheets(workSheetName)
+Set xRange = Worksheets(workSheetName).Range(rangeName)
+xAddr = xRange.Address
+xPosOldX = xRange.Left
+xPosOldY = xRange.Top
+
+ xSizeOldW = 0
+ xSizeOldH = 0
+ s = "BC" & xAddr & "#GR"
+ x = 0#
+ y = 0#
+ m = 2.5
+ dm = m * 2#
+ a = 0#
+ p = Trim(xBC)
+ b = Len(p)
+ For n = 1 To b
+   w = AscL(Mid(p, n, 1)) Mod 256
+   If (w >= 97 And w <= 112) Then
+     a = a + dm
+   ElseIf w = 10 Or n = b Then
+     If x < a Then x = a
+     y = y + dm
+     a = 0#
+   End If
+ Next n
+ If x <= 0# Then Exit Sub
+ On Error Resume Next
+ Set xShape = xSheet.Shapes(s)
+ On Error GoTo 0
+ If Not (xShape Is Nothing) Then
+   xPosOldX = xShape.Left
+   xPosOldY = xShape.Top
+   xSizeOldW = xShape.Width
+   xSizeOldH = xShape.Height
+   xShape.Delete
+ End If
+ On Error Resume Next
+ xSheet.Shapes("BC" & xAddr & "#BK").Delete
+ On Error GoTo 0
+ Set xBkgr = xSheet.Shapes.AddShape(msoShapeRectangle, 0, 0, x, y)
+ xBkgr.Line.Visible = msoFalse
+ xBkgr.Line.Weight = 0#
+ xBkgr.Line.ForeColor.RGB = RGB(255, 255, 255)
+ xBkgr.Fill.Solid
+ xBkgr.Fill.ForeColor.RGB = RGB(255, 255, 255)
+ xBkgr.Name = "BC" & xAddr & "#BK"
+ Set xShape = Nothing
+ x = 0#
+ y = 0#
+ g = 0
+ For n = 1 To b
+   w = AscL(Mid(p, n, 1)) Mod 256
+   If w = 10 Then
+     y = y + dm
+     x = 0#
+   ElseIf (w >= 97 And w <= 112) Then
+     w = w - 97
+     With xSheet.Shapes
+     Select Case w
+       Case 1: Set xShape = .AddShape(msoShapeRectangle, x, y, m, m): GoSub fmtxshape
+       Case 2: Set xShape = .AddShape(msoShapeRectangle, x + m, y, m, m): GoSub fmtxshape
+       Case 3: Set xShape = .AddShape(msoShapeRectangle, x, y, dm, m): GoSub fmtxshape
+       Case 4: Set xShape = .AddShape(msoShapeRectangle, x, y + m, m, m): GoSub fmtxshape
+       Case 5: Set xShape = .AddShape(msoShapeRectangle, x, y, m, dm): GoSub fmtxshape
+       Case 6: Set xShape = .AddShape(msoShapeRectangle, x + m, y, m, m): GoSub fmtxshape
+               Set xShape = .AddShape(msoShapeRectangle, x, y + m, m, m): GoSub fmtxshape
+       Case 7: Set xShape = .AddShape(msoShapeRectangle, x, y, dm, m): GoSub fmtxshape
+               Set xShape = .AddShape(msoShapeRectangle, x, y + m, m, m): GoSub fmtxshape
+       Case 8: Set xShape = .AddShape(msoShapeRectangle, x + m, y + m, m, m): GoSub fmtxshape
+       Case 9: Set xShape = .AddShape(msoShapeRectangle, x, y, m, m): GoSub fmtxshape
+               Set xShape = .AddShape(msoShapeRectangle, x + m, y + m, m, m): GoSub fmtxshape
+       Case 10: Set xShape = .AddShape(msoShapeRectangle, x + m, y, m, dm): GoSub fmtxshape
+       Case 11: Set xShape = .AddShape(msoShapeRectangle, x, y, dm, m): GoSub fmtxshape
+                Set xShape = .AddShape(msoShapeRectangle, x + m, y + m, m, m): GoSub fmtxshape
+       Case 12: Set xShape = .AddShape(msoShapeRectangle, x, y + m, dm, m): GoSub fmtxshape
+       Case 13: Set xShape = .AddShape(msoShapeRectangle, x, y, m, m): GoSub fmtxshape
+                Set xShape = .AddShape(msoShapeRectangle, x, y + m, dm, m): GoSub fmtxshape
+       Case 14: Set xShape = .AddShape(msoShapeRectangle, x + m, y, m, m): GoSub fmtxshape
+                Set xShape = .AddShape(msoShapeRectangle, x, y + m, dm, m): GoSub fmtxshape
+       Case 15: Set xShape = .AddShape(msoShapeRectangle, x, y, dm, dm): GoSub fmtxshape
+     End Select
+     End With
+     x = x + dm
+   End If
+ Next n
+ On Error Resume Next
+ Set xShape = xSheet.Shapes(s)
+ On Error GoTo 0
+ If Not (xShape Is Nothing) Then
+   xShape.Left = xPosOldX
+   xShape.Top = xPosOldY
+   If xSizeOldW > 0 Then
+     xShape.Width = xSizeOldW
+     xShape.Height = xSizeOldH
+   End If
+ Else
+   If Not (xBkgr Is Nothing) Then xBkgr.Delete
+ End If
+ Exit Sub
+fmtxshape:
+  xShape.Line.Visible = msoFalse
+  xShape.Line.Weight = 0#
+  xShape.Fill.Solid
+  xShape.Fill.ForeColor.RGB = RGB(0, 0, 0)
+  g = g + 1
+  xShape.Name = "BC" & xAddr & "#BR" & g
+  If g = 1 Then
+    xSheet.Shapes.Range(Array(xBkgr.Name, xShape.Name)).Group.Name = s
+  Else
+    xSheet.Shapes.Range(Array(s, xShape.Name)).Group.Name = s
+  End If
+  Return
+
+End Sub
+
