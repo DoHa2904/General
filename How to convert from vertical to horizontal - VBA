@@ -1,0 +1,78 @@
+Option Explicit
+
+Sub resort_table()
+Dim i As Integer ' runner 1
+Dim j As Integer ' runner 2 - target row
+Dim k As Integer ' runner 3 - target column
+
+' Find last line
+i = 1
+Do While IsEmpty(Cells(i, 1).Value) = False
+    i = i + 1
+Loop
+
+' Remove possible duplicates
+ActiveSheet.Range("$A$1:$D$" & i - 1).RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
+
+Range("A1:d" & i - 1).Select
+    
+    ActiveSheet.Sort.SortFields.Clear
+    
+ '  1st Sort
+    ActiveSheet.Sort.SortFields.Add Key:=Range("b1"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+ '  2nd Sort
+    ActiveSheet.Sort.SortFields.Add Key:=Range("d1"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+ '  Execute Sort
+    With ActiveSheet.Sort
+        .SetRange Selection
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+
+' Start conversion
+Cells(1, 1).Select
+i = 2
+j = 2
+' Important for SAP-Numbers
+Cells(j, 6).NumberFormat = "@"
+Cells(j, 8).NumberFormat = "@"
+
+' 1st line fill out
+Cells(i, 6).Value = Cells(i, 1).Value
+Cells(i, 7).Value = Cells(i, 2).Value
+Cells(i, 8).Value = Cells(i, 3).Value
+Cells(i, 9).Value = Cells(i, 4).Value
+i = 3
+j = 2
+k = 10
+
+' Loop for original data and then decide what do to with data
+Do While IsEmpty(Cells(i, 1).Value) = False
+    ' Product is the same
+    If Cells(j, 7).Value = Cells(i, 2).Value Then
+        Cells(j, k).NumberFormat = "@"
+        Cells(j, k).Value = Cells(i, 3).Value
+        Cells(j, k + 1).Value = Cells(i, 4).Value
+        k = k + 2
+    Else
+        ' Product is different
+        j = j + 1
+        k = 8
+        Cells(j, 6).NumberFormat = "@"
+        Cells(j, 6).Value = Cells(i, 1).Value
+        Cells(j, 7).Value = Cells(i, 2).Value
+        Cells(j, k).NumberFormat = "@"
+        Cells(j, k).Value = Cells(i, 3).Value
+        Cells(j, k + 1).Value = Cells(i, 4).Value
+        k = k + 2
+    End If
+    i = i + 1
+Loop
+MsgBox "Finished"
+
+End Sub
